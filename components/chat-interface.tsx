@@ -10,6 +10,14 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
+// Add SpeechRecognition types to global window object
+declare global {
+    interface Window {
+        webkitSpeechRecognition: any;
+        SpeechRecognition: any;
+    }
+}
+
 export function ChatInterface() {
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [chatId, setChatId] = useState<string | null>(null)
@@ -22,13 +30,67 @@ export function ChatInterface() {
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [messages, setMessages] = useState<Array<{ id: string, role: 'user' | 'assistant', content: string }>>([])
+    const [isListening, setIsListening] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const recognitionRef = useRef<any>(null)
 
     // Auto-scroll to bottom on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
+
+    // Initialize Speech Recognition
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition()
+                recognition.continuous = true
+                recognition.interimResults = true
+                recognition.lang = 'en-US'
+
+                recognition.onstart = () => setIsListening(true)
+                recognition.onend = () => setIsListening(false)
+
+                recognition.onresult = (event: any) => {
+                    let transcript = ''
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        if (event.results[i].isFinal) {
+                            transcript += event.results[i][0].transcript
+                        }
+                    }
+                    if (transcript) {
+                        setInputValue(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + transcript)
+                    }
+                }
+
+                recognition.onerror = (event: any) => {
+                    if (event.error === 'no-speech') {
+                        setIsListening(false)
+                        return // Don't log error for silence
+                    }
+                    console.error('Speech recognition error', event.error)
+                    setIsListening(false)
+                }
+
+                recognitionRef.current = recognition
+            }
+        }
+    }, [])
+
+    const toggleListening = () => {
+        if (!recognitionRef.current) {
+            alert('Speech recognition is not supported in this browser.')
+            return
+        }
+
+        if (isListening) {
+            recognitionRef.current.stop()
+        } else {
+            recognitionRef.current.start()
+        }
+    }
 
     // handleInputChange logic
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +384,7 @@ export function ChatInterface() {
                                 type="text"
                                 value={inputValue}
                                 onChange={handleInputChange}
-                                placeholder="Message..."
+                                placeholder={isListening ? "Listening..." : "Message..."}
                                 className="flex-1 bg-transparent py-3 md:py-4 px-1 text-sm text-white placeholder:text-zinc-500 focus:outline-none"
                                 autoComplete="off"
                                 autoCorrect="off"
@@ -330,8 +392,13 @@ export function ChatInterface() {
                             />
                             <div className="flex items-center pr-1.5 md:pr-2 gap-1">
                                 {/* Mic button - right side */}
-                                <button type="button" className="p-2 text-zinc-500 hover:text-zinc-300 active:text-zinc-200 transition-colors touch-manipulation" title="Voice input (coming soon)">
-                                    <Mic className="h-5 w-5" />
+                                <button
+                                    type="button"
+                                    onClick={toggleListening}
+                                    className={`p-2 transition-all duration-200 touch-manipulation ${isListening ? 'text-red-500 animate-pulse bg-red-500/10 rounded-full' : 'text-zinc-500 hover:text-zinc-300 active:text-zinc-200'}`}
+                                    title={isListening ? "Stop listening" : "Start voice input"}
+                                >
+                                    <Mic className={`h-5 w-5 ${isListening ? 'fill-current' : ''}`} />
                                 </button>
                                 {/* Send button */}
                                 <button
