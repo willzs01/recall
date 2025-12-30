@@ -1,10 +1,14 @@
 'use client'
 
-import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen } from 'lucide-react'
+import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen, Plus } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { Sidebar } from './sidebar'
 import { createClient } from '@/utils/supabase/client'
 import { v4 as uuidv4 } from 'uuid'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 export function ChatInterface() {
     const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -226,10 +230,47 @@ export function ChatInterface() {
                                     <div
                                         className={`rounded-2xl px-3.5 py-2.5 md:px-4 md:py-3 text-[13px] md:text-sm leading-relaxed shadow-sm ${message.role === 'user'
                                             ? 'bg-indigo-600 text-white'
-                                            : 'bg-zinc-900 border border-white/5 text-zinc-200'
+                                            : 'bg-zinc-900/50 border border-white/5 text-zinc-200'
                                             }`}
                                     >
-                                        {message.content}
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                // Styled components for markdown
+                                                p: ({ children }) => <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words">{children}</p>,
+                                                ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                                                ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4">{children}</h1>,
+                                                h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3">{children}</h2>,
+                                                h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-2">{children}</h3>,
+                                                code: ({ node, inline, className, children, ...props }: any) => {
+                                                    const match = /language-(\w+)/.exec(className || '')
+                                                    return !inline && match ? (
+                                                        <SyntaxHighlighter
+                                                            style={vscDarkPlus}
+                                                            language={match[1]}
+                                                            PreTag="div"
+                                                            className="rounded-lg !my-2 text-xs md:text-sm"
+                                                            {...props}
+                                                        >
+                                                            {String(children).replace(/\n$/, '')}
+                                                        </SyntaxHighlighter>
+                                                    ) : (
+                                                        <code className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono" {...props}>
+                                                            {children}
+                                                        </code>
+                                                    )
+                                                },
+                                                table: ({ children }) => <div className="overflow-x-auto my-2"><table className="min-w-full border-collapse border border-white/10 text-xs md:text-sm">{children}</table></div>,
+                                                th: ({ children }) => <th className="border border-white/10 bg-white/5 px-2 py-1 text-left font-semibold">{children}</th>,
+                                                td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
+                                                blockquote: ({ children }) => <blockquote className="border-l-2 border-indigo-500 pl-3 my-2 italic text-zinc-400">{children}</blockquote>,
+                                                a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline break-all">{children}</a>,
+                                            }}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
                                     </div>
                                     {/* Assistant Actions */}
                                     {message.role === 'assistant' && (
@@ -309,12 +350,4 @@ export function ChatInterface() {
     )
 }
 
-function Plus({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12h8" />
-            <path d="M12 8v8" />
-        </svg>
-    )
-}
+

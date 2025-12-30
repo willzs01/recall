@@ -6,6 +6,8 @@ import { createClient } from '@/utils/supabase/server';
 
 
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
     console.log('[RAG Debug] Request started');
 
