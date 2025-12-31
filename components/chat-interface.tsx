@@ -118,17 +118,17 @@ export function ChatInterface() {
         }
     }
 
-    // handleInputChange logic
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setInputValue(e.target.value)
-        adjustTextareaHeight()
-    }
-
-    const adjustTextareaHeight = () => {
+    // Auto-resize textarea logic
+    useEffect(() => {
         if (inputRef.current) {
             inputRef.current.style.height = 'auto'
             inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`
         }
+    }, [inputValue])
+
+    // handleInputChange logic
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInputValue(e.target.value)
     }
 
     // Handle Enter key to submit
