@@ -1,4 +1,5 @@
 import { login } from './actions'
+import { SubmitButton } from '@/components/submit-button'
 
 export default async function LoginPage(props: {
     searchParams: Promise<{ [key: string]: string | undefined }>
@@ -51,12 +52,13 @@ export default async function LoginPage(props: {
                     )}
 
                     <div>
-                        <button
+                        <SubmitButton
                             formAction={login}
-                            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors"
+                            className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                            loadingText="Signing in..."
                         >
                             Sign in
-                        </button>
+                        </SubmitButton>
                     </div>
                 </form>
             </div>
