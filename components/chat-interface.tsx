@@ -66,24 +66,28 @@ export function ChatInterface() {
                 }
 
                 recognition.onresult = (event: any) => {
-                    let newInterim = ''
-                    let finalTranscript = ''
+                    let finalTranscripts = ''
+                    let interimTranscripts = ''
 
                     for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript
                         if (event.results[i].isFinal) {
-                            if (i > processedIndexRef.current) {
-                                finalTranscript += event.results[i][0].transcript
-                                processedIndexRef.current = i
-                            }
+                            finalTranscripts += transcript + ' '
                         } else {
-                            newInterim += event.results[i][0].transcript
+                            interimTranscripts += transcript
                         }
                     }
 
-                    if (finalTranscript) {
-                        setInputValue(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript)
+                    if (finalTranscripts) {
+                        setInputValue(prev => {
+                            const trimmedPrev = prev.trim()
+                            const newContent = trimmedPrev
+                                ? `${trimmedPrev} ${finalTranscripts.trim()}`
+                                : finalTranscripts.trim()
+                            return newContent
+                        })
                     }
-                    setInterimTranscript(newInterim)
+                    setInterimTranscript(interimTranscripts)
                 }
 
                 recognition.onerror = (event: any) => {
