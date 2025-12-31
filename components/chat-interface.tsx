@@ -35,10 +35,14 @@ export function ChatInterface() {
     const inputRef = useRef<HTMLInputElement>(null)
     const recognitionRef = useRef<any>(null)
 
-    // Auto-scroll to bottom on new messages
-    useEffect(() => {
+    // Auto-scroll to bottom only on mount or manual trigger
+    const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, []) // Removed [messages] dependency to prevent auto-scrolling during stream
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -112,6 +116,9 @@ export function ChatInterface() {
         setMessages(prev => [...prev, userMessage])
         setInputValue('')
         setIsLoading(true)
+
+        // Scroll to bottom immediately to show user message
+        setTimeout(scrollToBottom, 100)
 
         try {
             // 2. Refresh Sidebar if new chat
@@ -215,6 +222,7 @@ export function ChatInterface() {
                 role: m.role as 'user' | 'assistant',
                 content: m.content
             })))
+            setTimeout(scrollToBottom, 100)
         }
     }
 
@@ -233,8 +241,8 @@ export function ChatInterface() {
 
             {/* Main Content */}
             <div className="flex flex-1 flex-col h-full overflow-hidden relative">
-                {/* Header - sticky at top */}
-                <header className="sticky top-0 flex h-14 md:h-16 shrink-0 items-center justify-between border-b border-white/5 bg-zinc-950 px-3 md:px-4 z-20 safe-area-top">
+                {/* Header - Absolute to be fixed at top independent of flow */}
+                <header className="absolute top-0 w-full flex h-14 md:h-16 shrink-0 items-center justify-between border-b border-white/5 bg-zinc-950/80 backdrop-blur-md px-3 md:px-4 z-20 safe-area-top">
                     <div className="flex items-center gap-2 md:gap-3">
                         {/* Mobile Menu Button - always visible on mobile */}
                         <button
@@ -269,8 +277,8 @@ export function ChatInterface() {
                     </button>
                 </header>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-3 md:p-6 scroll-smooth overscroll-contain">
+                {/* Messages - Added top padding to account for absolute header */}
+                <div className="flex-1 overflow-y-auto p-3 md:p-6 pt-16 md:pt-20 scroll-smooth overscroll-contain">
                     <div className="mx-auto max-w-3xl space-y-4 md:space-y-6">
                         {messages.length === 0 && (
                             <div className="flex flex-col items-center justify-center h-full text-zinc-500 mt-16 md:mt-20 px-4 text-center">
@@ -290,7 +298,7 @@ export function ChatInterface() {
 
                                 <div className={`space-y-1.5 md:space-y-2 max-w-[88%] sm:max-w-[80%] md:max-w-[75%]`}>
                                     <div
-                                        className={`rounded-2xl px-3.5 py-2.5 md:px-4 md:py-3 text-[13px] md:text-sm leading-relaxed shadow-sm ${message.role === 'user'
+                                        className={`rounded-2xl px-3.5 py-2.5 md:px-4 md:py-3 text-[15px] md:text-base leading-relaxed shadow-sm ${message.role === 'user'
                                             ? 'bg-indigo-600 text-white'
                                             : 'bg-zinc-900/50 border border-white/5 text-zinc-200'
                                             }`}
@@ -303,9 +311,9 @@ export function ChatInterface() {
                                                 ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
                                                 ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
                                                 li: ({ children }) => <li className="mb-1">{children}</li>,
-                                                h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-4">{children}</h1>,
-                                                h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-3">{children}</h2>,
-                                                h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-2">{children}</h3>,
+                                                h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4">{children}</h1>,
+                                                h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
+                                                h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-2">{children}</h3>,
                                                 code: ({ node, inline, className, children, ...props }: any) => {
                                                     const match = /language-(\w+)/.exec(className || '')
                                                     return !inline && match ? (
@@ -313,21 +321,21 @@ export function ChatInterface() {
                                                             style={vscDarkPlus}
                                                             language={match[1]}
                                                             PreTag="div"
-                                                            className="rounded-lg !my-2 text-xs md:text-sm"
+                                                            className="rounded-lg !my-3 text-sm"
                                                             {...props}
                                                         >
                                                             {String(children).replace(/\n$/, '')}
                                                         </SyntaxHighlighter>
                                                     ) : (
-                                                        <code className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono" {...props}>
+                                                        <code className="bg-white/10 rounded px-1.5 py-0.5 text-sm font-mono" {...props}>
                                                             {children}
                                                         </code>
                                                     )
                                                 },
-                                                table: ({ children }) => <div className="overflow-x-auto my-2"><table className="min-w-full border-collapse border border-white/10 text-xs md:text-sm">{children}</table></div>,
-                                                th: ({ children }) => <th className="border border-white/10 bg-white/5 px-2 py-1 text-left font-semibold">{children}</th>,
-                                                td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
-                                                blockquote: ({ children }) => <blockquote className="border-l-2 border-indigo-500 pl-3 my-2 italic text-zinc-400">{children}</blockquote>,
+                                                table: ({ children }) => <div className="overflow-x-auto my-3"><table className="min-w-full border-collapse border border-white/10 text-sm">{children}</table></div>,
+                                                th: ({ children }) => <th className="border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold">{children}</th>,
+                                                td: ({ children }) => <td className="border border-white/10 px-3 py-2">{children}</td>,
+                                                blockquote: ({ children }) => <blockquote className="border-l-2 border-indigo-500 pl-4 my-3 italic text-zinc-400">{children}</blockquote>,
                                                 a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline break-all">{children}</a>,
                                             }}
                                         >
@@ -362,7 +370,7 @@ export function ChatInterface() {
                                 <div className="flex h-6 w-6 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] md:text-xs font-medium">
                                     AI
                                 </div>
-                                <div className="rounded-2xl px-3.5 py-2.5 md:px-4 md:py-3 bg-zinc-900 border border-white/5 text-zinc-400 text-[13px] md:text-sm">
+                                <div className="rounded-2xl px-3.5 py-2.5 md:px-4 md:py-3 bg-zinc-900 border border-white/5 text-zinc-400 text-[15px] md:text-base">
                                     <span className="animate-pulse">Thinking...</span>
                                 </div>
                             </div>
@@ -385,7 +393,7 @@ export function ChatInterface() {
                                 value={inputValue}
                                 onChange={handleInputChange}
                                 placeholder={isListening ? "Listening..." : "Message..."}
-                                className="flex-1 bg-transparent py-3 md:py-4 px-1 text-sm text-white placeholder:text-zinc-500 focus:outline-none"
+                                className="flex-1 bg-transparent py-3 md:py-4 px-1 text-base text-white placeholder:text-zinc-500 focus:outline-none"
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck="false"

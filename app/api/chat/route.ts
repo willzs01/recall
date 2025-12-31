@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
         // 3. Query Pinecone
         console.log('[RAG Debug] Querying Pinecone...');
         const index = pinecone.index(process.env.PINECONE_INDEX_NAME!);
-        const queryResponse = await index.query({
+        const namespace = index.namespace(process.env.PINECONE_NAMESPACE || 'clinic');
+        const queryResponse = await namespace.query({
             vector: embedding,
             topK: 5,
             includeMetadata: true,
