@@ -436,7 +436,7 @@ export function ChatInterface() {
                                 onChange={handleInputChange}
                                 onKeyDown={handleKeyDown}
                                 placeholder={isListening ? (interimTranscript || "Listening...") : "Message..."}
-                                className="flex-1 bg-transparent py-3 md:py-4 px-1 text-base text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[120px] min-h-[50px] overflow-y-auto"
+                                className="flex-1 w-full bg-transparent py-3 md:py-4 px-1 text-base text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[120px] min-h-[50px] overflow-y-auto break-words whitespace-pre-wrap"
                                 rows={1}
                                 spellCheck="false"
                             />
