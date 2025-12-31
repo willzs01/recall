@@ -45,6 +45,18 @@ export async function POST(req: NextRequest) {
             console.warn('[RAG Debug] No user found');
             return new Response('Unauthorized', { status: 401 });
         }
+
+        /*
+        if (authError) {
+            console.error('[RAG Debug] Auth Error:', authError);
+            // Don't throw here, just handle as unauthorized if no user
+        }
+
+        if (!user) {
+            console.warn('[RAG Debug] No user found');
+            return new Response('Unauthorized', { status: 401 });
+        }
+        */
         console.log('[RAG Debug] User authenticated:', user.id);
 
         // 2. Embed the user's query
@@ -69,9 +81,18 @@ export async function POST(req: NextRequest) {
             includeMetadata: true,
         });
 
+
+
         // 4. Construct Context
         const contextText = queryResponse.matches
-            .map((match) => match.metadata?.text || '')
+            .map((match) => {
+                const text = (match.metadata?.text as string) || '';
+                const imageUrl = match.metadata?.image_url as string | undefined;
+                if (imageUrl) {
+                    return `[Context Image: ${imageUrl}]\n${text}`;
+                }
+                return text;
+            })
             .join('\n\n---\n\n');
 
         console.log(`[RAG] Found ${queryResponse.matches.length} matches`);
@@ -116,15 +137,17 @@ export async function POST(req: NextRequest) {
         console.log('[RAG Debug] Generating content with Gemini...');
         const systemPrompt = `You are Recall, an intelligent AI assistant.
 
-        You have access to the following context from the user's files:
+        You have access to the following context from the user's files. Some context may include images identified by [Context Image: URL].
         ---
         ${contextText}
         ---
 
         Instructions:
         1. If the user asks about the files or content in the context, use the context to answer accurately.
-        2. If the context is empty or unhelpful, and the user's query is a general question (like "hello", "help", "who are you", or general knowledge), answer as a helpful assistant using your training data.
-        3. Only say "I don't have that information" if the user specifically asks for file-specific data that is missing from the context.
+        2. If the context contains an image URL ([Context Image: URL]) and the user's query is relevant to it, YOU MUST display the image by embedding it in your response using Markdown format: ![Image Description](URL).
+        3. Describe the image based on the text context provided with it if asked.
+        4. If the context is empty or unhelpful, and the user's query is a general question (like "hello", "help", "who are you", or general knowledge), answer as a helpful assistant using your training data.
+        5. Only say "I don't have that information" if the user specifically asks for file-specific data that is missing from the context.
         `;
 
         const result = await model.generateContentStream({
