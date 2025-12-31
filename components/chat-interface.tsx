@@ -32,8 +32,10 @@ export function ChatInterface() {
     const [messages, setMessages] = useState<Array<{ id: string, role: 'user' | 'assistant', content: string }>>([])
     const [isListening, setIsListening] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    const inputRef = useRef<HTMLInputElement>(null)
+    const inputRef = useRef<HTMLTextAreaElement>(null)
     const recognitionRef = useRef<any>(null)
+    const processedIndexRef = useRef(-1)
+    const [interimTranscript, setInterimTranscript] = useState('')
 
     // Auto-scroll to bottom only on mount or manual trigger
     const scrollToBottom = () => {
@@ -51,22 +53,37 @@ export function ChatInterface() {
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition()
                 recognition.continuous = true
+                recognition.continuous = true
                 recognition.interimResults = true
                 recognition.lang = 'en-US'
 
-                recognition.onstart = () => setIsListening(true)
-                recognition.onend = () => setIsListening(false)
+                recognition.onstart = () => {
+                    setIsListening(true)
+                }
+                recognition.onend = () => {
+                    setIsListening(false)
+                    setInterimTranscript('')
+                }
 
                 recognition.onresult = (event: any) => {
-                    let transcript = ''
+                    let newInterim = ''
+                    let finalTranscript = ''
+
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         if (event.results[i].isFinal) {
-                            transcript += event.results[i][0].transcript
+                            if (i > processedIndexRef.current) {
+                                finalTranscript += event.results[i][0].transcript
+                                processedIndexRef.current = i
+                            }
+                        } else {
+                            newInterim += event.results[i][0].transcript
                         }
                     }
-                    if (transcript) {
-                        setInputValue(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + transcript)
+
+                    if (finalTranscript) {
+                        setInputValue(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript)
                     }
+                    setInterimTranscript(newInterim)
                 }
 
                 recognition.onerror = (event: any) => {
@@ -79,6 +96,10 @@ export function ChatInterface() {
                 }
 
                 recognitionRef.current = recognition
+
+                return () => {
+                    recognition.stop()
+                }
             }
         }
     }, [])
@@ -92,13 +113,30 @@ export function ChatInterface() {
         if (isListening) {
             recognitionRef.current.stop()
         } else {
+            processedIndexRef.current = -1
             recognitionRef.current.start()
         }
     }
 
     // handleInputChange logic
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInputValue(e.target.value)
+        adjustTextareaHeight()
+    }
+
+    const adjustTextareaHeight = () => {
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto'
+            inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`
+        }
+    }
+
+    // Handle Enter key to submit
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            onFormSubmit(e)
+        }
     }
 
     // Custom submit handler
@@ -115,6 +153,7 @@ export function ChatInterface() {
         // 1. Optimistic Update
         setMessages(prev => [...prev, userMessage])
         setInputValue('')
+        if (inputRef.current) inputRef.current.style.height = 'auto' // Reset height
         setIsLoading(true)
 
         // Scroll to bottom immediately to show user message
@@ -382,23 +421,22 @@ export function ChatInterface() {
                 {/* Input Area - floating at bottom */}
                 <div className="sticky bottom-[1.5vh] shrink-0 px-4 pb-2 pt-3 md:px-6 md:pb-2 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent z-20 safe-area-bottom">
                     <div className="mx-auto max-w-3xl transition-transform duration-200 ease-out focus-within:-translate-y-1 md:focus-within:scale-[1.01]">
-                        <form onSubmit={onFormSubmit} className="relative flex items-center rounded-2xl bg-zinc-900/80 ring-1 ring-white/10 focus-within:ring-indigo-500/50 transition-all focus-within:shadow-lg focus-within:shadow-indigo-500/10 backdrop-blur-sm">
+                        <form onSubmit={onFormSubmit} className="relative flex items-end rounded-2xl bg-zinc-900/80 ring-1 ring-white/10 focus-within:ring-indigo-500/50 transition-all focus-within:shadow-lg focus-within:shadow-indigo-500/10 backdrop-blur-sm">
                             {/* Attachment button - left edge */}
-                            <button type="button" className="p-2.5 md:p-3 text-zinc-500 hover:text-zinc-300 active:text-zinc-200 transition-colors touch-manipulation" title="Attach file">
+                            <button type="button" className="p-3 text-zinc-500 hover:text-zinc-300 active:text-zinc-200 transition-colors touch-manipulation mb-0.5" title="Attach file">
                                 <Plus className="h-5 w-5" />
                             </button>
-                            <input
+                            <textarea
                                 ref={inputRef}
-                                type="text"
                                 value={inputValue}
                                 onChange={handleInputChange}
-                                placeholder={isListening ? "Listening..." : "Message..."}
-                                className="flex-1 bg-transparent py-3 md:py-4 px-1 text-base text-white placeholder:text-zinc-500 focus:outline-none"
-                                autoComplete="off"
-                                autoCorrect="off"
+                                onKeyDown={handleKeyDown}
+                                placeholder={isListening ? (interimTranscript || "Listening...") : "Message..."}
+                                className="flex-1 bg-transparent py-3 md:py-4 px-1 text-base text-white placeholder:text-zinc-500 focus:outline-none resize-none max-h-[120px] min-h-[50px] overflow-y-auto"
+                                rows={1}
                                 spellCheck="false"
                             />
-                            <div className="flex items-center pr-1.5 md:pr-2 gap-1">
+                            <div className="flex items-center pb-2 pr-1.5 md:pr-2 gap-1 mb-0.5">
                                 {/* Mic button - right side */}
                                 <button
                                     type="button"
