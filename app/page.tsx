@@ -95,7 +95,8 @@ function Header() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center">
-                        <span className="text-white font-bold text-xl">Recall</span>
+                        <img src="/lpicon.png" alt="Recall Logo" className="w-9 h-9 object-contain -mr-1" />
+                        <span className="text-white font-bold text-xl">ecall</span>
                     </div>
 
                     <nav className="hidden md:flex items-center gap-8">
@@ -528,8 +529,9 @@ function Footer() {
         <footer className="bg-navy-dark border-t border-white/10 py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-white font-bold text-xl">Recall</span>
+                    <div className="flex items-center">
+                        <img src="/lpicon.png" alt="Recall Logo" className="w-9 h-9 object-contain -mr-1" />
+                        <span className="text-white font-bold text-xl">ecall</span>
                     </div>
                     <p className="text-white/40 text-sm">© 2026 Recall. All rights reserved.</p>
                 </div>
