@@ -1,92 +1,164 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy-dark: #0d1f2d;
+  --color-navy-medium: #162a3a;
+  --color-navy-light: #1e3a4f;
+  --color-coral: #e5683a;
+  --color-coral-hover: #d55a2f;
+  --color-cream: #f5f5f5;
+  --color-text-dark: #2d3748;
+  --color-text-light: #e2e8f0;
+  --font-roboto: 'Roboto', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --navy-dark: #0d1f2d;
+  --navy-medium: #162a3a;
+  --navy-light: #1e3a4f;
+  --coral: #e5683a;
+  --coral-hover: #d55a2f;
+  --cream: #f5f5f5;
+  --text-dark: #2d3748;
+  --text-light: #e2e8f0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Safe area utilities for notched devices (iPhone X+) */
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
+.text-balance {
+  text-wrap: balance;
 }
 
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
-/* Prevent pull-to-refresh on mobile */
-html,
-body {
-  overscroll-behavior: none;
+/* Custom gradient backgrounds */
+.bg-gradient-navy {
+  background: linear-gradient(135deg, #0d1f2d 0%, #162a3a 50%, #1e3a4f 100%);
 }
 
-/* Touch device improvements */
-@media (hover: none) and (pointer: coarse) {
+.bg-gradient-wave {
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(30, 58, 79, 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(22, 42, 58, 0.8) 0%, transparent 50%),
+    linear-gradient(135deg, #0d1f2d 0%, #162a3a 100%);
+}
 
-  /* Remove hover effects that don't work on touch */
-  .touch-manipulation {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+/* Subtle noise/grain texture overlay */
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Header with terrain texture */
+.header-texture {
+  background-image:
+    repeating-linear-gradient(45deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.015) 2px,
+      rgba(255, 255, 255, 0.015) 4px),
+    repeating-linear-gradient(-45deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.01) 2px,
+      rgba(255, 255, 255, 0.01) 4px);
+}
+
+/* Button styles */
+.btn-coral {
+  @apply bg-[#e5683a] text-white px-6 py-3 rounded-md font-medium transition-all duration-300;
+}
+
+.btn-coral:hover {
+  @apply bg-[#d55a2f] transform scale-105;
+}
+
+.btn-outline-light {
+  @apply border border-white/30 text-white px-6 py-3 rounded-md font-medium transition-all duration-300;
+}
+
+.btn-outline-light:hover {
+  @apply bg-white/10 border-white/50;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-300;
+}
+
+.card-hover:hover {
+  @apply transform -translate-y-1 shadow-xl;
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Improve scrolling on iOS */
-.scroll-smooth {
-  -webkit-overflow-scrolling: touch;
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
 }
 
-/* Custom Scrollbar - Dark Theme */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+/* Staggered animations */
+.stagger-1 {
+  animation-delay: 0.1s;
 }
 
-/* Webkit browsers (Chrome, Safari, Edge) */
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #0d1f2d;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 3px;
+  background: #e5683a;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
-}
-
-/* Hide scrollbar on mobile for cleaner look */
-@media (max-width: 768px) {
-  ::-webkit-scrollbar {
-    width: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #27272a;
-  }
+  background: #d55a2f;
 }

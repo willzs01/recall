@@ -2,10 +2,10 @@
     "name": "Recall",
     "short_name": "Recall",
     "description": "AI powered document search assistant",
-    "start_url": "/",
+    "start_url": "/login",
     "display": "standalone",
-    "background_color": "#09090b",
-    "theme_color": "#4f46e5",
+    "background_color": "#0d1f2d",
+    "theme_color": "#0d1f2d",
     "orientation": "portrait-primary",
     "icons": [
         {

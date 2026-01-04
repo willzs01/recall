@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { ClientBody } from "./ClientBody";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Recall - AI Chat",
-  description: "AI powered document search assistant",
+  title: "Recall | Your Organization's Knowledge, Instantly Accessible",
+  description: "Stop searching. Start finding. Transform how your organization accesses knowledge with our RAG-powered AI assistant. Trusted by Law Firms, Healthcare Providers, and Enterprise Organizations.",
+  keywords: "AI knowledge assistant, RAG technology, enterprise AI, document search, knowledge management, AI chatbot",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -26,6 +17,11 @@ export const metadata: Metadata = {
     icon: "/icon-512.png",
     apple: "/icon-512.png",
   },
+  openGraph: {
+    title: "Recall | Your Organization's Knowledge, Instantly Accessible",
+    description: "Stop searching. Start finding. Transform how your organization accesses knowledge with our RAG-powered AI assistant.",
+    type: "website",
+  },
 };
 
 export const viewport = {
@@ -34,7 +30,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover' as const,
-  themeColor: '#4f46e5',
+  themeColor: '#0d1f2d',
   interactiveWidget: 'resizes-content' as const,
 };
 
@@ -44,20 +40,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Recall" />
         <link rel="apple-touch-icon" href="/icon-512.png" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <ClientBody>
         <ServiceWorkerRegister />
         {children}
-      </body>
+      </ClientBody>
     </html>
   );
 }
+

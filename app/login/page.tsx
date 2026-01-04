@@ -1,5 +1,7 @@
 import { login } from './actions'
 import { SubmitButton } from '@/components/submit-button'
+import { MessageSquare, Mail } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function LoginPage(props: {
     searchParams: Promise<{ [key: string]: string | undefined }>
@@ -8,11 +10,18 @@ export default async function LoginPage(props: {
     const error = searchParams.error
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 font-sans text-zinc-100">
+        <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 font-sans text-zinc-100 relative">
             <div className="w-full max-w-sm space-y-8 rounded-2xl bg-zinc-900/50 p-8 shadow-xl ring-1 ring-white/10 backdrop-blur-xl">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold tracking-tight text-white">Welcome Back</h1>
                     <p className="mt-2 text-sm text-zinc-400">Sign in to your account</p>
+                </div>
+
+                <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
+                    <p className="text-sm text-amber-200 text-center">
+                        Access requires invite-only credentials. <br />
+                        <span className="font-medium text-amber-100">Contact us for a demo account.</span>
+                    </p>
                 </div>
 
                 <form className="mt-8 space-y-6">
@@ -62,6 +71,29 @@ export default async function LoginPage(props: {
                     </div>
                 </form>
             </div>
+
+            {/* Fixed Contact Icons - Bottom Right */}
+            <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3">
+                <p className="text-xs text-zinc-500 mb-1">Need access? Contact us:</p>
+                <div className="flex gap-2">
+                    <Link
+                        href="https://wa.me/2349162235619"
+                        target="_blank"
+                        className="flex items-center justify-center gap-2 rounded-full bg-[#25D366] p-3 text-white hover:bg-[#20bd5a] transition-colors shadow-lg"
+                        title="WhatsApp"
+                    >
+                        <MessageSquare className="h-5 w-5" />
+                    </Link>
+                    <Link
+                        href="mailto:williamsfolorunso07@gmail.com"
+                        className="flex items-center justify-center gap-2 rounded-full bg-indigo-600 p-3 text-white hover:bg-indigo-500 transition-colors shadow-lg"
+                        title="Email"
+                    >
+                        <Mail className="h-5 w-5" />
+                    </Link>
+                </div>
+            </div>
         </div>
     )
 }
+
