@@ -1,6 +1,6 @@
 'use client'
 
-import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen, Plus, MoreVertical, X, ExternalLink, ChevronDown } from 'lucide-react'
+import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen, Plus, MoreVertical, X, ExternalLink, ChevronDown, FileText } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { Sidebar } from './sidebar'
 import { createClient } from '@/utils/supabase/client'
@@ -9,6 +9,9 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
+// Source citation type
+type Source = { file: string; page: number | null };
 
 // Add SpeechRecognition types to global window object
 declare global {
@@ -145,6 +148,7 @@ export function ChatInterface() {
     const recognitionRef = useRef<any>(null)
     const processedIndexRef = useRef(-1)
     const [interimTranscript, setInterimTranscript] = useState('')
+    const [sourcesMap, setSourcesMap] = useState<Record<string, Source[]>>({}) // Sources by message ID
 
     // Auto-scroll to bottom only on mount or manual trigger
     const scrollToBottom = () => {
@@ -300,9 +304,25 @@ export function ChatInterface() {
                 setChatId(newChatId)
             }
 
+            // Parse sources from header
+            const sourcesHeader = response.headers.get('x-sources')
+            let sources: Source[] = []
+            if (sourcesHeader) {
+                try {
+                    sources = JSON.parse(sourcesHeader)
+                } catch (e) {
+                    console.warn('Failed to parse sources:', e)
+                }
+            }
+
             // 4. Handle Streaming Response
             const reader = response.body?.getReader()
             let assistantMessage = { id: uuidv4(), role: 'assistant' as const, content: '' }
+
+            // Store sources for this message
+            if (sources.length > 0) {
+                setSourcesMap(prev => ({ ...prev, [assistantMessage.id]: sources }))
+            }
 
             // Add initial empty assistant message
             setMessages(prev => [...prev, assistantMessage])
@@ -509,6 +529,21 @@ export function ChatInterface() {
                                             <button className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors ml-1">
                                                 <MoreHorizontal className="w-3.5 h-3.5" />
                                             </button>
+                                        </div>
+                                    )}
+                                    {/* Source Citations */}
+                                    {message.role === 'assistant' && sourcesMap[message.id] && sourcesMap[message.id].length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-2 pl-1">
+                                            <FileText className="w-3 h-3 text-zinc-500" />
+                                            <span className="text-xs text-zinc-500">Sources:</span>
+                                            {sourcesMap[message.id].map((source, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full border border-zinc-700 hover:border-zinc-600 transition-colors"
+                                                >
+                                                    {source.file}{source.page ? ` (p.${source.page})` : ''}
+                                                </span>
+                                            ))}
                                         </div>
                                     )}
                                 </div>

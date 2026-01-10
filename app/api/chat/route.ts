@@ -96,9 +96,33 @@ export async function POST(req: NextRequest) {
             });
         });
 
+        // Helper function to sanitize text by removing non-Supabase image URLs
+        const sanitizeTextUrls = (text: string): string => {
+            // Remove markdown image links that don't point to our Supabase storage
+            // Matches: ![...](URL) or **Image URL:** URL patterns
+            const supabaseHost = 'qsektseuyzuyxuksniqs.supabase.co';
+
+            // Remove markdown images with non-Supabase URLs: ![alt](url)
+            let sanitized = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+                if (url.includes(supabaseHost)) return match; // Keep Supabase URLs
+                return `[Image: ${alt || 'see below'}]`; // Replace with placeholder
+            });
+
+            // Remove **Image URL:** or **URL:** patterns with non-Supabase URLs
+            sanitized = sanitized.replace(/\*\*(?:Image\s+)?URL:\*\*\s*(https?:\/\/[^\s]+)/gi, (match, url) => {
+                if (url.includes(supabaseHost)) return match; // Keep Supabase URLs
+                return '[Image URL removed - see image below]'; // Replace
+            });
+
+            return sanitized;
+        };
+
         const contextText = queryResponse.matches
             .map((match) => {
-                const text = (match.metadata?.text as string) || '';
+                let text = (match.metadata?.text as string) || '';
+                // Sanitize text to remove broken external URLs
+                text = sanitizeTextUrls(text);
+
                 // Check multiple possible field names for image URLs
                 const imageUrl = (
                     match.metadata?.ImageUrl ||  // n8n pipeline uses this
@@ -117,6 +141,23 @@ export async function POST(req: NextRequest) {
                 return text;
             })
             .join('\n\n---\n\n');
+
+        // 4b. Extract source citations from matches
+        const sources = queryResponse.matches
+            .map((match) => ({
+                file: (match.metadata?.filefrom || match.metadata?.fileName || 'Unknown') as string,
+                page: (match.metadata?.['page number'] || match.metadata?.['page no'] || null) as number | null,
+                score: match.score || 0
+            }))
+            .filter(s => s.file !== 'Unknown')
+            // Remove duplicates by file+page
+            .filter((s, i, arr) => arr.findIndex(x => x.file === s.file && x.page === s.page) === i)
+            // Sort by score (highest first)
+            .sort((a, b) => b.score - a.score)
+            // Take top 3 sources
+            .slice(0, 3);
+
+        console.log('[RAG Debug] Sources:', sources.map(s => `${s.file}${s.page ? ` (p.${s.page})` : ''}`).join(', '));
 
         console.log(`[RAG] Found ${queryResponse.matches.length} matches`);
 
@@ -161,18 +202,19 @@ export async function POST(req: NextRequest) {
         console.log('[RAG Debug] Generating content with Gemini...');
         const systemPrompt = `You are Recall, an intelligent AI assistant.
 
-        You have access to the following context from the user's files. Some context may include images identified by [Context Image: URL].
+        You have access to the following context from the user's files. Images are marked with [Context Image: URL] - these are the ONLY valid image URLs you should use.
         ---
         ${contextText}
         ---
 
         Instructions:
         1. If the user asks about the files or content in the context, use the context to answer accurately.
-        2. If the context contains an image URL ([Context Image: URL]) and the user's query is relevant to it, YOU MUST display the image by embedding it in your response using Markdown format: ![Image Description](URL).
-        3. Describe the image based on the text context provided with it if asked.
-        4. If the context is empty or unhelpful, and the user's query is a general question (like "hello", "help", "who are you", or general knowledge), answer as a helpful assistant using your training data.
-        5. Only say "I don't have that information" if the user specifically asks for file-specific data that is missing from the context.
-        6. Remember the conversation context - if the user refers to something from earlier in the chat, use that context to respond appropriately.
+        2. IMPORTANT: When displaying images, ONLY use URLs from [Context Image: URL] markers. Do NOT use any other URLs mentioned in the text content - they may be outdated or broken.
+        3. To display an image, use Markdown format: ![Image Description](URL) where URL is from a [Context Image: ...] marker.
+        4. Describe the image based on the text context provided with it if asked.
+        5. If the context is empty or unhelpful, and the user's query is a general question (like "hello", "help", "who are you", or general knowledge), answer as a helpful assistant using your training data.
+        6. Only say "I don't have that information" if the user specifically asks for file-specific data that is missing from the context.
+        7. Remember the conversation context - if the user refers to something from earlier in the chat, use that context to respond appropriately.
         `;
 
         // Build conversation history for Gemini (last 10 messages for context)
@@ -235,6 +277,7 @@ export async function POST(req: NextRequest) {
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
                 'x-chat-id': activeChatId, // Send back the chat ID so client knows
+                'x-sources': JSON.stringify(sources.map(s => ({ file: s.file, page: s.page }))),
             },
         });
 
