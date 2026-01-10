@@ -1,6 +1,6 @@
 'use client'
 
-import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen, Plus } from 'lucide-react'
+import { Send, Menu, Mic, SquarePen, ThumbsUp, ThumbsDown, MoreHorizontal, PanelLeftOpen, Plus, MoreVertical, X, ExternalLink, ChevronDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { Sidebar } from './sidebar'
 import { createClient } from '@/utils/supabase/client'
@@ -17,6 +17,115 @@ declare global {
         SpeechRecognition: any;
     }
 }
+
+// Expandable Image Component
+function ExpandableImage({ src, alt }: { src?: string; alt?: string }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [showDescription, setShowDescription] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        }
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showMenu]);
+
+    if (!src) return null;
+
+    return (
+        <div className="my-3">
+            {!isExpanded ? (
+                // Thumbnail view - fixed size
+                <div
+                    onClick={() => setIsExpanded(true)}
+                    className="cursor-pointer group relative inline-block"
+                >
+                    <img
+                        src={src}
+                        alt={alt || 'Image'}
+                        className="w-48 h-48 object-cover rounded-xl border border-white/10 shadow-lg group-hover:shadow-xl group-hover:border-indigo-500/50 transition-all duration-200"
+                        loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-xl transition-all duration-200 flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 text-white text-xs bg-black/50 px-2 py-1 rounded transition-opacity">
+                            Click to expand
+                        </span>
+                    </div>
+                </div>
+            ) : (
+                // Expanded view
+                <div className="relative inline-block max-w-full">
+                    <img
+                        src={src}
+                        alt={alt || 'Image'}
+                        className="max-w-full md:max-w-lg rounded-xl border border-white/10 shadow-xl"
+                        loading="lazy"
+                    />
+
+                    {/* Close button */}
+                    <button
+                        onClick={() => setIsExpanded(false)}
+                        className="absolute top-2 left-2 p-1.5 bg-black/60 hover:bg-black/80 rounded-lg text-white transition-colors"
+                        title="Collapse"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+
+                    {/* 3-dot menu */}
+                    <div className="absolute top-2 right-2" ref={menuRef}>
+                        <button
+                            onClick={() => setShowMenu(!showMenu)}
+                            className="p-1.5 bg-black/60 hover:bg-black/80 rounded-lg text-white transition-colors"
+                            title="More options"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {showMenu && (
+                            <div className="absolute right-0 mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl py-1 min-w-[160px] z-50">
+                                <a
+                                    href={src}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-white/10 transition-colors"
+                                    onClick={() => setShowMenu(false)}
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                    Open in external tab
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Collapsible Description */}
+            {alt && (
+                <div className="mt-2">
+                    <button
+                        onClick={() => setShowDescription(!showDescription)}
+                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showDescription ? 'rotate-180' : ''}`} />
+                        <span>{showDescription ? 'Hide description' : 'Show description'}</span>
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-200 ${showDescription ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                        <p className="text-xs text-zinc-400 leading-relaxed">{alt}</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 
 export function ChatInterface() {
     const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -380,6 +489,9 @@ export function ChatInterface() {
                                                 td: ({ children }) => <td className="border border-white/10 px-3 py-2">{children}</td>,
                                                 blockquote: ({ children }) => <blockquote className="border-l-2 border-indigo-500 pl-4 my-3 italic text-zinc-400">{children}</blockquote>,
                                                 a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline break-all">{children}</a>,
+                                                img: ({ src, alt }) => (
+                                                    <ExpandableImage src={typeof src === 'string' ? src : undefined} alt={alt} />
+                                                ),
                                             }}
                                         >
                                             {message.content}

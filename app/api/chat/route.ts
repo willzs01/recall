@@ -84,11 +84,34 @@ export async function POST(req: NextRequest) {
 
 
         // 4. Construct Context
+        // Debug: Log all metadata fields to identify image URL field name
+        console.log('[RAG Debug] Pinecone matches metadata:');
+        queryResponse.matches.forEach((match, i) => {
+            console.log(`  Match ${i + 1} keys:`, Object.keys(match.metadata || {}));
+            // Log any values that look like URLs
+            Object.entries(match.metadata || {}).forEach(([key, val]) => {
+                if (typeof val === 'string' && (val.includes('http') || key.toLowerCase().includes('url') || key.toLowerCase().includes('image'))) {
+                    console.log(`    ${key}:`, val);
+                }
+            });
+        });
+
         const contextText = queryResponse.matches
             .map((match) => {
                 const text = (match.metadata?.text as string) || '';
-                const imageUrl = match.metadata?.image_url as string | undefined;
+                // Check multiple possible field names for image URLs
+                const imageUrl = (
+                    match.metadata?.ImageUrl ||  // n8n pipeline uses this
+                    match.metadata?.image_url ||
+                    match.metadata?.imageUrl ||
+                    match.metadata?.url ||
+                    match.metadata?.file_url ||
+                    match.metadata?.image ||
+                    match.metadata?.publicUrl
+                ) as string | undefined;
+
                 if (imageUrl) {
+                    console.log('[RAG Debug] Found image URL:', imageUrl);
                     return `[Context Image: ${imageUrl}]\n${text}`;
                 }
                 return text;
@@ -96,6 +119,7 @@ export async function POST(req: NextRequest) {
             .join('\n\n---\n\n');
 
         console.log(`[RAG] Found ${queryResponse.matches.length} matches`);
+
 
         // 5. Save User Message to DB (if chatId exists)
         // If it's a new chat, we might want to create it first or handle it on the client.
@@ -148,12 +172,31 @@ export async function POST(req: NextRequest) {
         3. Describe the image based on the text context provided with it if asked.
         4. If the context is empty or unhelpful, and the user's query is a general question (like "hello", "help", "who are you", or general knowledge), answer as a helpful assistant using your training data.
         5. Only say "I don't have that information" if the user specifically asks for file-specific data that is missing from the context.
+        6. Remember the conversation context - if the user refers to something from earlier in the chat, use that context to respond appropriately.
         `;
 
+        // Build conversation history for Gemini (last 10 messages for context)
+        const recentMessages = messages.slice(-10);
+        console.log(`[RAG Debug] Including ${recentMessages.length} messages in context`);
+
+        // Convert messages to Gemini format
+        // Gemini uses 'user' and 'model' roles
+        const conversationHistory = recentMessages.map((msg: { role: string; content: string }) => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        }));
+
+        // Build contents array: system context first, then conversation history
+        const contents = [
+            // System prompt with RAG context
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: "Understood. I'll help you with your files and questions, and remember our conversation context." }] },
+            // Conversation history
+            ...conversationHistory
+        ];
+
         const result = await model.generateContentStream({
-            contents: [
-                { role: 'user', parts: [{ text: systemPrompt + "\n\nUser Question: " + userQuery }] }
-            ],
+            contents,
         });
 
         // Handle Streaming Response
