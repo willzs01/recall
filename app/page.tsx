@@ -175,11 +175,14 @@ function HeroSection() {
                         <div className="bg-navy-medium/50 backdrop-blur-sm rounded-2xl border border-white/10 p-4 shadow-2xl">
                             <div className="aspect-video rounded-lg overflow-hidden">
                                 <iframe
-                                    src="https://www.loom.com/embed/9a3ad794db784f98bdf30a6945054385"
+                                    src="https://player.vimeo.com/video/1153283935?badge=0&autopause=0&player_id=0&app_id=58479"
+                                    width="1920"
+                                    height="1080"
                                     frameBorder="0"
-                                    allowFullScreen
+                                    allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    title="recall Demo"
                                     className="w-full h-full"
-                                    title="Recall Demo Video"
                                 />
                             </div>
                         </div>

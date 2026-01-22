@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { AuthTokenHandler } from "@/components/AuthTokenHandler";
 import { ClientBody } from "./ClientBody";
 import "./globals.css";
 
@@ -59,6 +60,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
       </head>
       <ClientBody>
+        <AuthTokenHandler />
         <ServiceWorkerRegister />
         {children}
       </ClientBody>
