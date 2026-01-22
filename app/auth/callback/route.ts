@@ -4,7 +4,13 @@ import { createClient } from '@/utils/supabase/server'
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
-    const next = searchParams.get('next') ?? '/'
+    const type = searchParams.get('type')
+
+    // Default next to '/' unless type is invite, then default to '/set-password'
+    let next = searchParams.get('next') ?? '/'
+    if (!searchParams.get('next') && type === 'invite') {
+        next = '/set-password';
+    }
 
     if (code) {
         const supabase = await createClient()
